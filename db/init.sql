@@ -1,0 +1,63 @@
+-- Main telemetry events table
+CREATE TABLE telemetry_events (
+    id BIGSERIAL PRIMARY KEY,
+    host_id VARCHAR(64) NOT NULL,
+    session_id VARCHAR(255) NOT NULL,
+    event_type VARCHAR(32) NOT NULL,
+    agent_name VARCHAR(64) NOT NULL,
+    decision VARCHAR(32),
+    decision_reason TEXT,
+    tool_name VARCHAR(64),
+    tool_input JSONB,
+    working_dir VARCHAR(512),
+    latency_ms INTEGER,
+    model_tier VARCHAR(16),
+    error_count INTEGER,
+    warning_count INTEGER,
+    extra_data JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for common query patterns
+CREATE INDEX idx_events_host_id ON telemetry_events(host_id);
+CREATE INDEX idx_events_session_id ON telemetry_events(session_id);
+CREATE INDEX idx_events_created_at ON telemetry_events(created_at);
+CREATE INDEX idx_events_agent_name ON telemetry_events(agent_name);
+CREATE INDEX idx_events_decision ON telemetry_events(decision);
+CREATE INDEX idx_events_event_type ON telemetry_events(event_type);
+
+-- Composite index for dashboard queries
+CREATE INDEX idx_events_time_agent ON telemetry_events(created_at, agent_name);
+
+-- Partial index for denial analysis
+CREATE INDEX idx_events_denials ON telemetry_events(agent_name, created_at)
+    WHERE decision IN ('DENIED', 'DECLINED', 'BLOCK');
+
+-- Full session transcripts for debugging
+CREATE TABLE session_transcripts (
+    id BIGSERIAL PRIMARY KEY,
+    host_id VARCHAR(64) NOT NULL,
+    session_id VARCHAR(255) NOT NULL,
+    transcript_data JSONB NOT NULL,
+    message_counts JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT unique_session UNIQUE (session_id)
+);
+
+CREATE INDEX idx_transcripts_session ON session_transcripts(session_id);
+CREATE INDEX idx_transcripts_host ON session_transcripts(host_id);
+CREATE INDEX idx_transcripts_created ON session_transcripts(created_at);
+
+-- API keys for authentication (store SHA-256 hash, not plaintext)
+CREATE TABLE api_keys (
+    id SERIAL PRIMARY KEY,
+    key_hash VARCHAR(128) NOT NULL UNIQUE,
+    host_id VARCHAR(64) NOT NULL,
+    description VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_used_at TIMESTAMPTZ,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE INDEX idx_api_keys_hash ON api_keys(key_hash) WHERE is_active = TRUE;

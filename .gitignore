@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Environment
+.env
+
+# Docker volumes
+postgres_data/
+grafana_data/
+caddy_data/
+caddy_config/
+
+# Build
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
