@@ -5,11 +5,9 @@ bun.lockb
 # Environment
 .env
 
-# Docker volumes
+# Docker volumes (local dev)
 postgres_data/
 grafana_data/
-caddy_data/
-caddy_config/
 
 # Build
 dist/

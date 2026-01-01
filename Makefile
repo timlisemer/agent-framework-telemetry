@@ -1,11 +1,8 @@
-.PHONY: build check install
-
-build:
-	docker compose build
+.PHONY: check install
 
 check:
 	cd collector && bun run typecheck
-	docker compose config --quiet
+	actionlint
 
 install:
 	cd collector && bun install
