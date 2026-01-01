@@ -111,7 +111,3 @@ Environment variables in `.env`:
   ]
 }
 ```
-
-## License
-
-Private - All rights reserved.
