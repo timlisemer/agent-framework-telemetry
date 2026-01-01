@@ -6,28 +6,31 @@ RUN bun install --frozen-lockfile --production
 COPY collector/src ./src
 COPY collector/tsconfig.json ./
 
-# Stage 2: Runtime
-FROM debian:bookworm-slim
+# Stage 2: Runtime (PostgreSQL 16 already included)
+FROM postgres:16-bookworm
 
 ARG TARGETARCH
 ARG S6_OVERLAY_VERSION=3.2.0.2
 
-# Install s6-overlay
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${TARGETARCH}.tar.xz /tmp
-RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
-    tar -C / -Jxpf /tmp/s6-overlay-${TARGETARCH}.tar.xz && \
-    rm /tmp/s6-overlay-*.tar.xz
-
-# Install PostgreSQL 16
+# Install base dependencies (needed for s6-overlay download and Grafana)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-16 \
-    postgresql-client-16 \
     ca-certificates \
     curl \
     gnupg \
     xz-utils \
     && rm -rf /var/lib/apt/lists/*
+
+# Install s6-overlay (map Docker arch to s6-overlay naming)
+RUN case "${TARGETARCH}" in \
+      amd64) S6_ARCH=x86_64 ;; \
+      arm64) S6_ARCH=aarch64 ;; \
+      *) S6_ARCH=${TARGETARCH} ;; \
+    esac && \
+    curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" -o /tmp/s6-overlay-noarch.tar.xz && \
+    curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" -o /tmp/s6-overlay-arch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-arch.tar.xz && \
+    rm /tmp/s6-overlay-*.tar.xz
 
 # Install Grafana 11
 RUN curl -fsSL https://apt.grafana.com/gpg.key | gpg --dearmor -o /usr/share/keyrings/grafana.gpg && \
