@@ -62,7 +62,7 @@ RUN mkdir -p /var/lib/grafana && chown -R grafana:grafana /var/lib/grafana
 
 # Set environment for services
 ENV NODE_ENV=production
-ENV DATABASE_URL=postgres://telemetry:${POSTGRES_PASSWORD}@localhost:5432/agent_telemetry
+# DATABASE_URL is constructed at runtime by validate-env.sh from POSTGRES_PASSWORD
 ENV GF_PATHS_PROVISIONING=/etc/grafana/provisioning
 ENV GF_PATHS_DATA=/var/lib/grafana
 

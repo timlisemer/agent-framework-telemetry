@@ -1,1 +1,3 @@
+#!/command/execlineb -P
+with-contenv
 /scripts/validate-env.sh
