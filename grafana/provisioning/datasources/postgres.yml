@@ -2,6 +2,7 @@ apiVersion: 1
 
 datasources:
   - name: PostgreSQL
+    uid: PostgreSQL
     type: postgres
     url: localhost:5432
     database: agent_telemetry
@@ -9,6 +10,7 @@ datasources:
     secureJsonData:
       password: ${POSTGRES_PASSWORD}
     jsonData:
+      database: agent_telemetry
       sslmode: disable
       maxOpenConns: 10
       maxIdleConns: 5
