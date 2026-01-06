@@ -61,6 +61,15 @@ psql -U telemetry -d agent_telemetry -c \
 }
 ```
 
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `POSTGRES_PASSWORD` | Yes | PostgreSQL telemetry user password |
+| `GF_SECURITY_ADMIN_PASSWORD` | Yes | Grafana admin password |
+| `AGENT_FRAMEWORK_API_KEY` | Yes | API key for telemetry collection (use `openssl rand -hex 32`) |
+| `TELEMETRY_HOST_ID` | No | Host ID to associate with API key (default: `default`) |
+
 ## Local Development
 
 ```bash

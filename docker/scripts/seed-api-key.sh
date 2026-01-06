@@ -2,7 +2,8 @@
 set -e
 
 KEY_HASH=$(printf '%s' "${AGENT_FRAMEWORK_API_KEY}" | sha256sum | cut -d' ' -f1)
+HOST_ID="${TELEMETRY_HOST_ID:-default}"
 
-su postgres -c "psql -d agent_telemetry -c \"INSERT INTO api_keys (key_hash, host_id, description, is_active) VALUES ('${KEY_HASH}', 'default', 'Container startup', TRUE) ON CONFLICT (key_hash) DO NOTHING;\""
+su postgres -c "psql -d agent_telemetry -c \"INSERT INTO api_keys (key_hash, host_id, description, is_active) VALUES ('${KEY_HASH}', '${HOST_ID}', 'Container startup', TRUE) ON CONFLICT (key_hash) DO NOTHING;\""
 
-echo "API key seeded"
+echo "API key seeded for host: ${HOST_ID}"
