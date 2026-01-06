@@ -51,9 +51,9 @@ export async function upsertTranscript(
 
 export async function validateApiKey(
   keyHash: string
-): Promise<{ hostId: string } | null> {
+): Promise<{ id: number } | null> {
   const result = await sql`
-    SELECT host_id FROM api_keys
+    SELECT id FROM api_keys
     WHERE key_hash = ${keyHash} AND is_active = TRUE
   `;
 
@@ -63,5 +63,5 @@ export async function validateApiKey(
     () => {}
   );
 
-  return { hostId: result[0].host_id };
+  return { id: result[0].id };
 }

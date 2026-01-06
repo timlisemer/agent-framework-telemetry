@@ -27,17 +27,17 @@ For NixOS deployment, see the [nixos config repo](https://github.com/timlisemer/
 
 ## API Key Management
 
-Generate and insert API keys for each host:
+Generate and insert API keys:
 
 ```bash
 # Generate a new API key
 API_KEY=$(openssl rand -hex 32)
-echo "API Key for laptop: $API_KEY"
+echo "API Key: $API_KEY"
 
 # Insert the hash into the database
 psql -U telemetry -d agent_telemetry -c \
-  "INSERT INTO api_keys (key_hash, host_id, description)
-   VALUES (encode(sha256('$API_KEY'::bytea), 'hex'), 'laptop', 'Laptop host');"
+  "INSERT INTO api_keys (key_hash, description)
+   VALUES (encode(sha256('$API_KEY'::bytea), 'hex'), 'My API key');"
 ```
 
 ## Telemetry Event Format
@@ -68,7 +68,6 @@ psql -U telemetry -d agent_telemetry -c \
 | `POSTGRES_PASSWORD` | Yes | PostgreSQL telemetry user password |
 | `GF_SECURITY_ADMIN_PASSWORD` | Yes | Grafana admin password |
 | `AGENT_FRAMEWORK_API_KEY` | Yes | API key for telemetry collection (use `openssl rand -hex 32`) |
-| `TELEMETRY_HOST_ID` | No | Host ID to associate with API key (default: `default`) |
 
 ## Local Development
 

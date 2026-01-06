@@ -4,7 +4,7 @@ import { z } from "zod";
 import { insertTelemetryEvents } from "../db/queries.js";
 import { authMiddleware } from "../middleware/auth.js";
 
-const telemetryRouter = new Hono<{ Variables: { hostId: string } }>();
+const telemetryRouter = new Hono();
 
 const eventSchema = z.object({
   hostId: z.string(),
@@ -38,16 +38,6 @@ telemetryRouter.use("/*", authMiddleware);
 
 telemetryRouter.post("/batch", zValidator("json", batchSchema), async (c) => {
   const { events } = c.req.valid("json");
-  const authenticatedHostId = c.get("hostId");
-
-  for (const event of events) {
-    if (event.hostId !== authenticatedHostId) {
-      return c.json(
-        { error: `Host ID mismatch: expected ${authenticatedHostId}` },
-        400
-      );
-    }
-  }
 
   try {
     const inserted = await insertTelemetryEvents(events);

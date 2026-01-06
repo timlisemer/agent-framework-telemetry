@@ -53,7 +53,6 @@ CREATE INDEX idx_transcripts_created ON session_transcripts(created_at);
 CREATE TABLE api_keys (
     id SERIAL PRIMARY KEY,
     key_hash VARCHAR(128) NOT NULL UNIQUE,
-    host_id VARCHAR(64) NOT NULL,
     description VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_used_at TIMESTAMPTZ,

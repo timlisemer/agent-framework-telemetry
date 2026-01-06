@@ -10,7 +10,7 @@ async function hashApiKey(key: string): Promise<string> {
 }
 
 export const authMiddleware = createMiddleware<{
-  Variables: { hostId: string };
+  Variables: { apiKeyId: number };
 }>(async (c, next) => {
   const apiKey = c.req.header("X-API-Key");
 
@@ -25,6 +25,6 @@ export const authMiddleware = createMiddleware<{
     return c.json({ error: "Invalid API key" }, 403);
   }
 
-  c.set("hostId", result.hostId);
+  c.set("apiKeyId", result.id);
   await next();
 });
