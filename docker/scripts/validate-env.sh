@@ -2,7 +2,7 @@
 set -e
 
 missing=""
-for var in POSTGRES_PASSWORD GF_SECURITY_ADMIN_PASSWORD TELEMETRY_API_KEY; do
+for var in POSTGRES_PASSWORD GF_SECURITY_ADMIN_PASSWORD AGENT_FRAMEWORK_API_KEY; do
     eval "val=\$$var"
     if [ -z "$val" ]; then
         echo "ERROR: $var not set"
@@ -40,7 +40,7 @@ ENCODED_PASSWORD=$(printf '%s' "$POSTGRES_PASSWORD" | sed \
 
 # Export DATABASE_URL to s6 container environment for collector service
 DATABASE_URL="postgres://telemetry:${ENCODED_PASSWORD}@localhost:5432/agent_telemetry"
-printf '%s' "$DATABASE_URL" > /run/s6/container_environment/DATABASE_URL
+printf '%s' "$DATABASE_URL" >/run/s6/container_environment/DATABASE_URL
 echo "DATABASE_URL exported to s6 environment"
 
 echo "Environment validation passed"
