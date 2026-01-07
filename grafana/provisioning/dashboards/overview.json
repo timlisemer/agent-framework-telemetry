@@ -737,6 +737,14 @@
                 }
               },
               {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
                 "id": "custom.cellOptions",
                 "value": {
                   "mode": "gradient",
@@ -754,6 +762,14 @@
               {
                 "id": "unit",
                 "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
               },
               {
                 "id": "thresholds",
@@ -892,6 +908,14 @@
                 }
               },
               {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
                 "id": "custom.cellOptions",
                 "value": {
                   "mode": "gradient",
@@ -909,6 +933,14 @@
               {
                 "id": "unit",
                 "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
               },
               {
                 "id": "thresholds",
