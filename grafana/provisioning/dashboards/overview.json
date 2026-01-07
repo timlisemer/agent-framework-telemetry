@@ -574,7 +574,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date_trunc('hour', created_at) AS time,\n  decision,\n  COUNT(*) as count\nFROM telemetry_events\nWHERE $__timeFilter(created_at) AND decision IS NOT NULL\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "-- Decisions Over Time: Stacked bar chart of decision types by hour\nSELECT\n  date_trunc('hour', created_at) AS time,\n  decision,\n  COUNT(*) as count\nFROM telemetry_events\nWHERE $__timeFilter(created_at)\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -645,7 +645,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 32
       },
       "id": 6,
       "options": {
@@ -670,7 +670,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date_trunc('hour', created_at) AS time,\n  tool_name,\n  100.0 * SUM(CASE WHEN decision = 'DENIED' THEN 1 ELSE 0 END) / COUNT(*) as denial_rate\nFROM telemetry_events\nWHERE $__timeFilter(created_at) AND agent_name = 'tool-approve' AND tool_name IS NOT NULL\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "-- Tool Denial Rate: Shows denial percentage per tool across all agents\nSELECT\n  date_trunc('hour', created_at) AS time,\n  tool_name,\n  100.0 * SUM(CASE WHEN decision IN ('DENIED', 'DECLINED', 'BLOCK') THEN 1 ELSE 0 END) / COUNT(*) as denial_rate\nFROM telemetry_events\nWHERE $__timeFilter(created_at)\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -825,7 +825,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Host Health: Per-host metrics with both approval and success rates\nSELECT\n  host_id,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  MAX(created_at) as last_seen,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVED','CONFIRMED','OK') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY host_id\nORDER BY total_events DESC",
+          "rawSql": "-- Host Health: Per-host metrics with both approval and success rates\nSELECT\n  host_id,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision IN ('DENIED','DECLINED','BLOCK') THEN 1 ELSE 0 END) as denials,\n  MAX(created_at) as last_seen,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVED','CONFIRMED','OK') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY host_id\nORDER BY total_events DESC",
           "refId": "A"
         }
       ],
@@ -969,7 +969,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 16
       },
       "id": 9,
       "options": {
@@ -992,12 +992,142 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Agent Statistics: Per-agent metrics to identify broken/unused agents\nSELECT\n  agent_name,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVED','CONFIRMED','OK') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate,\n  ROUND(AVG(latency_ms)) as avg_latency,\n  MAX(created_at) as last_seen\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY total_events DESC",
+          "rawSql": "-- Agent Statistics: Per-agent metrics to identify broken/unused agents\nSELECT\n  agent_name,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision IN ('DENIED','DECLINED','BLOCK') THEN 1 ELSE 0 END) as denials,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVED','CONFIRMED','OK') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate,\n  ROUND(AVG(latency_ms)) as avg_latency,\n  MAX(created_at) as last_seen\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY total_events DESC",
           "refId": "A"
         }
       ],
       "title": "Agent Statistics",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value", "percent"]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Events per Host: Distribution of total events across hosts\nSELECT\n  host_id,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY host_id\nORDER BY events DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Events per Host",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value", "percent"]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Events per Agent: Distribution of total events across agents\nSELECT\n  agent_name,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY events DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Events per Agent",
+      "type": "piechart"
     }
   ],
   "refresh": "30s",
