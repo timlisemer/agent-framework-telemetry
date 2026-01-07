@@ -40,6 +40,38 @@ psql -U telemetry -d agent_telemetry -c \
    VALUES (encode(sha256('$API_KEY'::bytea), 'hex'), 'My API key');"
 ```
 
+## Core API
+
+The telemetry API is built on two fundamental concepts provided by the client.
+
+### Decision (required)
+
+Every event must include exactly one decision value:
+
+| Decision | Category | When to Use |
+|----------|----------|-------------|
+| `APPROVE` | Authorization | Agent approved tool execution |
+| `DENY` | Authorization | Agent blocked tool execution |
+| `CONFIRM` | Quality | Check/confirm agent validated code |
+| `SUCCESS` | Outcome | Operation completed without errors |
+| `ERROR` | Outcome | Provider error occurred (API failures, etc.) |
+
+### Mode (required)
+
+Execution mode the agent is running in:
+
+| Mode | Description |
+|------|-------------|
+| `direct` | Direct execution mode |
+| `lazy` | Lazy evaluation mode |
+
+### Metrics Definitions
+
+- **Approval Rate**: Percentage of events where `decision IN ('APPROVE', 'CONFIRM', 'SUCCESS')`
+- **Success Rate**: Percentage of events where `decision != 'ERROR'`
+- **Denial Rate**: Percentage of events where `decision = 'DENY'`
+- **Error Rate**: Percentage of events where `decision = 'ERROR'`
+
 ## Telemetry Event Format
 
 ### Required Fields
@@ -51,14 +83,13 @@ psql -U telemetry -d agent_telemetry -c \
 | `eventType` | enum | One of: `agent_execution`, `hook_decision`, `error`, `escalation`, `commit` |
 | `agentName` | string | Name of the agent (e.g., `tool-approve`, `commit`, `check`, `confirm`) |
 | `hookName` | string | Name of the hook that triggered this agent (e.g., `PreToolUse`, `PostToolUse`) |
-| `decision` | string | Decision result: `APPROVED`, `DENIED`, `CONFIRMED`, `DECLINED`, `OK`, `BLOCK` |
+| `mode` | enum | Execution mode: `direct`, `lazy` |
+| `decision` | enum | Decision result: `APPROVE`, `DENY`, `CONFIRM`, `SUCCESS`, `ERROR` |
 | `toolName` | string | Name of the tool being executed (e.g., `Bash`, `Read`, `Edit`) |
 | `workingDir` | string | Working directory path |
 | `latencyMs` | number | Operation latency in milliseconds |
 | `modelTier` | enum | Model tier category: `haiku`, `sonnet`, `opus` |
 | `modelName` | string | Actual model name from LLM provider (e.g., `claude-3-haiku-20240307`, `gpt-4-turbo`) |
-| `errorCount` | number | Number of errors from LLM provider during this operation |
-| `success` | boolean | `true` if operation completed without errors, `false` if errored |
 
 ### Optional Fields
 
@@ -67,13 +98,6 @@ psql -U telemetry -d agent_telemetry -c \
 | `timestamp` | string | ISO 8601 timestamp (defaults to server time if not provided) |
 | `decisionReason` | string | Explanation for the decision |
 | `extraData` | object | Additional arbitrary data (JSONB) |
-
-### Metrics Definitions
-
-- **Approval Rate**: Percentage of events where `decision IN ('APPROVED', 'CONFIRMED', 'OK')`
-- **Success Rate**: Percentage of events where `success = true`
-
-A declined request that didn't error has `decision='DENIED', success=true` (counts toward success rate, not approval rate).
 
 ### Example Request
 
@@ -86,14 +110,13 @@ A declined request that didn't error has `decision='DENIED', success=true` (coun
       "eventType": "agent_execution",
       "agentName": "tool-approve",
       "hookName": "PreToolUse",
-      "decision": "APPROVED",
+      "mode": "direct",
+      "decision": "APPROVE",
       "toolName": "Bash",
       "workingDir": "/home/user/project",
       "latencyMs": 150,
       "modelTier": "haiku",
       "modelName": "claude-3-haiku-20240307",
-      "errorCount": 0,
-      "success": true,
       "decisionReason": "Tool is safe"
     }
   ]

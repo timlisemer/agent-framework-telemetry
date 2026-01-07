@@ -20,8 +20,10 @@ const eventSchema = z.object({
   agentName: z.string(),
   // Name of the hook that triggered this agent (e.g., PreToolUse, PostToolUse)
   hookName: z.string(),
-  // Decision result (APPROVED, DENIED, CONFIRMED, DECLINED, OK, BLOCK)
-  decision: z.enum(["APPROVED", "DENIED", "CONFIRMED", "DECLINED", "OK", "BLOCK"]),
+  // Execution mode: direct or lazy
+  mode: z.enum(["direct", "lazy"]),
+  // Decision result: APPROVE, DENY, CONFIRM, SUCCESS, ERROR
+  decision: z.enum(["APPROVE", "DENY", "CONFIRM", "SUCCESS", "ERROR"]),
   // Name of the tool being executed
   toolName: z.string(),
   // Working directory path
@@ -32,10 +34,6 @@ const eventSchema = z.object({
   modelTier: z.enum(["haiku", "sonnet", "opus"]),
   // Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo)
   modelName: z.string(),
-  // Number of errors from LLM provider during this operation
-  errorCount: z.number(),
-  // Whether operation completed without errors (declined requests can still be success=true)
-  success: z.boolean(),
 
   // Optional fields
   timestamp: z.string().optional(),

@@ -7,6 +7,12 @@ export type TelemetryEventType =
 
 export type ModelTier = "haiku" | "sonnet" | "opus";
 
+// Execution mode: direct or lazy evaluation
+export type Mode = "direct" | "lazy";
+
+// Core decision types
+export type Decision = "APPROVE" | "DENY" | "CONFIRM" | "SUCCESS" | "ERROR";
+
 export interface TelemetryEvent {
   // Required fields
   hostId: string;
@@ -15,8 +21,10 @@ export interface TelemetryEvent {
   agentName: string;
   // Name of the hook that triggered this agent (e.g., PreToolUse, PostToolUse)
   hookName: string;
-  // Decision result (APPROVED, DENIED, CONFIRMED, DECLINED, OK, BLOCK)
-  decision: string;
+  // Execution mode
+  mode: Mode;
+  // Decision result
+  decision: Decision;
   // Name of the tool being executed
   toolName: string;
   // Working directory path
@@ -27,10 +35,6 @@ export interface TelemetryEvent {
   modelTier: ModelTier;
   // Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo)
   modelName: string;
-  // Number of errors from LLM provider during this operation
-  errorCount: number;
-  // Whether operation completed without errors (declined requests can still be success=true)
-  success: boolean;
 
   // Optional fields
   timestamp?: string;
