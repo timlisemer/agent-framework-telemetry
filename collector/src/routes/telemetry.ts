@@ -21,7 +21,7 @@ const eventSchema = z.object({
   // Name of the hook that triggered this agent (e.g., PreToolUse, PostToolUse)
   hookName: z.string(),
   // Decision result (APPROVED, DENIED, CONFIRMED, DECLINED, OK, BLOCK)
-  decision: z.string(),
+  decision: z.enum(["APPROVED", "DENIED", "CONFIRMED", "DECLINED", "OK", "BLOCK"]),
   // Name of the tool being executed
   toolName: z.string(),
   // Working directory path
