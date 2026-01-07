@@ -3,8 +3,8 @@ set -e
 
 missing=""
 for var in POSTGRES_PASSWORD GF_SECURITY_ADMIN_PASSWORD AGENT_FRAMEWORK_API_KEY; do
-    eval "val=\$$var"
-    if [ -z "$val" ]; then
+    # Use env to safely check if var is set (avoids eval with special chars)
+    if ! env | grep -q "^${var}="; then
         echo "ERROR: $var not set"
         missing="$missing $var"
     fi
@@ -17,7 +17,10 @@ fi
 
 # URL-encode the password for safe use in DATABASE_URL
 # Handle common special characters that break URL parsing
-ENCODED_PASSWORD=$(printf '%s' "$POSTGRES_PASSWORD" | sed \
+# Use env to get raw value - avoids shell expansion of $ in password
+# tr -d '\n' removes trailing newline from grep output
+RAW_PASSWORD=$(env | grep '^POSTGRES_PASSWORD=' | cut -d'=' -f2- | tr -d '\n')
+ENCODED_PASSWORD=$(printf '%s' "$RAW_PASSWORD" | sed \
     -e 's/%/%25/g' \
     -e 's/ /%20/g' \
     -e 's/!/%21/g' \

@@ -8,7 +8,10 @@ done
 echo "PostgreSQL is ready"
 
 # Create user and database if not exists
-su postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='telemetry'\" | grep -q 1 || psql -c \"CREATE USER telemetry WITH PASSWORD '${POSTGRES_PASSWORD}';\""
+# Get password safely and escape single quotes for SQL
+# tr -d '\n' removes trailing newline from grep output
+PG_PASS=$(env | grep '^POSTGRES_PASSWORD=' | cut -d'=' -f2- | tr -d '\n' | sed "s/'/''/g")
+su postgres -c "psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='telemetry'\" | grep -q 1 || psql -c \"CREATE USER telemetry WITH PASSWORD '${PG_PASS}';\""
 su postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='agent_telemetry'\" | grep -q 1 || psql -c \"CREATE DATABASE agent_telemetry OWNER telemetry;\""
 
 # Run init.sql if tables don't exist
