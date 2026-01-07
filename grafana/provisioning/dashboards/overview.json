@@ -456,7 +456,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "APPROVED"
+              "options": "Approved"
             },
             "properties": [
               {
@@ -471,67 +471,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "CONFIRMED"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "OK"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "DENIED"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "DECLINED"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "BLOCK"
+              "options": "Denied"
             },
             "properties": [
               {
@@ -574,7 +514,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "-- Decisions Over Time: Stacked bar chart of decision types by hour\nSELECT\n  date_trunc('hour', created_at) AS time,\n  decision,\n  COUNT(*) as count\nFROM telemetry_events\nWHERE $__timeFilter(created_at)\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "-- Decisions Over Time: Wide format for Grafana time_series compatibility\nSELECT\n  date_trunc('hour', created_at) AS time,\n  SUM(CASE WHEN decision IN ('APPROVED','CONFIRMED','OK') THEN 1 ELSE 0 END) as \"Approved\",\n  SUM(CASE WHEN decision IN ('DENIED','DECLINED','BLOCK') THEN 1 ELSE 0 END) as \"Denied\"\nFROM telemetry_events\nWHERE $__timeFilter(created_at)\nGROUP BY 1\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -670,7 +610,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "-- Tool Denial Rate: Shows denial percentage per tool across all agents\nSELECT\n  date_trunc('hour', created_at) AS time,\n  tool_name,\n  100.0 * SUM(CASE WHEN decision IN ('DENIED', 'DECLINED', 'BLOCK') THEN 1 ELSE 0 END) / COUNT(*) as denial_rate\nFROM telemetry_events\nWHERE $__timeFilter(created_at)\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "-- Tool Denial Rate: Wide format aggregated denial rate across all tools\nSELECT\n  date_trunc('hour', created_at) AS time,\n  100.0 * SUM(CASE WHEN decision IN ('DENIED','DECLINED','BLOCK') THEN 1 ELSE 0 END) / COUNT(*) as \"Denial Rate\"\nFROM telemetry_events\nWHERE $__timeFilter(created_at)\nGROUP BY 1\nORDER BY 1",
           "refId": "A"
         }
       ],
