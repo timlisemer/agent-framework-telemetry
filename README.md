@@ -42,6 +42,41 @@ psql -U telemetry -d agent_telemetry -c \
 
 ## Telemetry Event Format
 
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `hostId` | string | Unique identifier for the host machine |
+| `sessionId` | string | Session identifier |
+| `eventType` | enum | One of: `agent_execution`, `hook_decision`, `error`, `escalation`, `commit` |
+| `agentName` | string | Name of the agent (e.g., `tool-approve`, `commit`, `check`, `confirm`) |
+| `hookName` | string | Name of the hook that triggered this agent (e.g., `PreToolUse`, `PostToolUse`) |
+| `decision` | string | Decision result: `APPROVED`, `DENIED`, `CONFIRMED`, `DECLINED`, `OK`, `BLOCK` |
+| `toolName` | string | Name of the tool being executed (e.g., `Bash`, `Read`, `Edit`) |
+| `workingDir` | string | Working directory path |
+| `latencyMs` | number | Operation latency in milliseconds |
+| `modelTier` | enum | Model tier category: `haiku`, `sonnet`, `opus` |
+| `modelName` | string | Actual model name from LLM provider (e.g., `claude-3-haiku-20240307`, `gpt-4-turbo`) |
+| `errorCount` | number | Number of errors from LLM provider during this operation |
+| `success` | boolean | `true` if operation completed without errors, `false` if errored |
+
+### Optional Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | string | ISO 8601 timestamp (defaults to server time if not provided) |
+| `decisionReason` | string | Explanation for the decision |
+| `extraData` | object | Additional arbitrary data (JSONB) |
+
+### Metrics Definitions
+
+- **Approval Rate**: Percentage of events where `decision IN ('APPROVED', 'CONFIRMED', 'OK')`
+- **Success Rate**: Percentage of events where `success = true`
+
+A declined request that didn't error has `decision='DENIED', success=true` (counts toward success rate, not approval rate).
+
+### Example Request
+
 ```json
 {
   "events": [
@@ -50,12 +85,16 @@ psql -U telemetry -d agent_telemetry -c \
       "sessionId": "abc123",
       "eventType": "agent_execution",
       "agentName": "tool-approve",
-      "timestamp": "2024-01-15T10:30:00Z",
+      "hookName": "PreToolUse",
       "decision": "APPROVED",
-      "decisionReason": "Tool is safe",
       "toolName": "Bash",
+      "workingDir": "/home/user/project",
       "latencyMs": 150,
-      "modelTier": "haiku"
+      "modelTier": "haiku",
+      "modelName": "claude-3-haiku-20240307",
+      "errorCount": 0,
+      "success": true,
+      "decisionReason": "Tool is safe"
     }
   ]
 }

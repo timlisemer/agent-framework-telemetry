@@ -7,6 +7,7 @@ import { authMiddleware } from "../middleware/auth.js";
 const telemetryRouter = new Hono();
 
 const eventSchema = z.object({
+  // Required fields
   hostId: z.string(),
   sessionId: z.string(),
   eventType: z.enum([
@@ -17,16 +18,28 @@ const eventSchema = z.object({
     "commit",
   ]),
   agentName: z.string(),
+  // Name of the hook that triggered this agent (e.g., PreToolUse, PostToolUse)
+  hookName: z.string(),
+  // Decision result (APPROVED, DENIED, CONFIRMED, DECLINED, OK, BLOCK)
+  decision: z.string(),
+  // Name of the tool being executed
+  toolName: z.string(),
+  // Working directory path
+  workingDir: z.string(),
+  // Operation latency in milliseconds
+  latencyMs: z.number(),
+  // Model tier category (haiku, sonnet, opus)
+  modelTier: z.enum(["haiku", "sonnet", "opus"]),
+  // Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo)
+  modelName: z.string(),
+  // Number of errors from LLM provider during this operation
+  errorCount: z.number(),
+  // Whether operation completed without errors (declined requests can still be success=true)
+  success: z.boolean(),
+
+  // Optional fields
   timestamp: z.string().optional(),
-  decision: z.string().optional(),
   decisionReason: z.string().optional(),
-  toolName: z.string().optional(),
-  toolInput: z.record(z.unknown()).optional(),
-  workingDir: z.string().optional(),
-  latencyMs: z.number().optional(),
-  modelTier: z.enum(["haiku", "sonnet", "opus"]).optional(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
   extraData: z.record(z.unknown()).optional(),
 });
 

@@ -7,19 +7,22 @@ export async function insertTelemetryEvents(
   if (events.length === 0) return 0;
 
   const values = events.map((e) => ({
+    // Required fields
     host_id: e.hostId,
     session_id: e.sessionId,
     event_type: e.eventType,
     agent_name: e.agentName,
-    decision: e.decision ?? null,
+    hook_name: e.hookName,
+    decision: e.decision,
+    tool_name: e.toolName,
+    working_dir: e.workingDir,
+    latency_ms: e.latencyMs,
+    model_tier: e.modelTier,
+    model_name: e.modelName,
+    error_count: e.errorCount,
+    success: e.success,
+    // Optional fields
     decision_reason: e.decisionReason ?? null,
-    tool_name: e.toolName ?? null,
-    tool_input: e.toolInput ? JSON.stringify(e.toolInput) : null,
-    working_dir: e.workingDir ?? null,
-    latency_ms: e.latencyMs ?? null,
-    model_tier: e.modelTier ?? null,
-    error_count: e.errorCount ?? null,
-    warning_count: e.warningCount ?? null,
     extra_data: e.extraData ? JSON.stringify(e.extraData) : null,
     created_at: e.timestamp || new Date().toISOString(),
   }));

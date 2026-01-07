@@ -5,15 +5,21 @@ CREATE TABLE telemetry_events (
     session_id VARCHAR(255) NOT NULL,
     event_type VARCHAR(32) NOT NULL,
     agent_name VARCHAR(64) NOT NULL,
-    decision VARCHAR(32),
+    -- Name of the hook that triggered this agent
+    hook_name VARCHAR(64) NOT NULL,
+    decision VARCHAR(32) NOT NULL,
     decision_reason TEXT,
-    tool_name VARCHAR(64),
-    tool_input JSONB,
-    working_dir VARCHAR(512),
-    latency_ms INTEGER,
-    model_tier VARCHAR(16),
-    error_count INTEGER,
-    warning_count INTEGER,
+    tool_name VARCHAR(64) NOT NULL,
+    working_dir VARCHAR(512) NOT NULL,
+    latency_ms INTEGER NOT NULL,
+    -- Model tier (haiku, sonnet, opus) - static category
+    model_tier VARCHAR(16) NOT NULL,
+    -- Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo)
+    model_name VARCHAR(128) NOT NULL,
+    -- Number of errors from LLM provider during this operation
+    error_count INTEGER NOT NULL,
+    -- Indicates if the operation completed without errors (declined requests can still be success=true)
+    success BOOLEAN NOT NULL,
     extra_data JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -32,6 +38,18 @@ CREATE INDEX idx_events_time_agent ON telemetry_events(created_at, agent_name);
 -- Partial index for denial analysis
 CREATE INDEX idx_events_denials ON telemetry_events(agent_name, created_at)
     WHERE decision IN ('DENIED', 'DECLINED', 'BLOCK');
+
+-- Index for success rate queries
+CREATE INDEX idx_events_success ON telemetry_events(success);
+
+-- Composite index for agent statistics queries
+CREATE INDEX idx_events_agent_success ON telemetry_events(agent_name, success);
+
+-- Index for model analytics
+CREATE INDEX idx_events_model_name ON telemetry_events(model_name);
+
+-- Index for hook analytics
+CREATE INDEX idx_events_hook_name ON telemetry_events(hook_name);
 
 -- Full session transcripts for debugging
 CREATE TABLE session_transcripts (
