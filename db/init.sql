@@ -34,7 +34,9 @@ CREATE TABLE telemetry_events (
     cached_tokens INTEGER,
     reasoning_tokens INTEGER,
     -- Cost tracking (USD)
-    cost DECIMAL(12, 8)
+    cost DECIMAL(12, 8),
+    -- Client version tracking
+    client_version VARCHAR(20)
 );
 
 -- Indexes for common query patterns
@@ -77,6 +79,10 @@ CREATE INDEX idx_events_cost ON telemetry_events(cost) WHERE cost IS NOT NULL;
 -- Composite index for LLM cost analytics
 CREATE INDEX idx_events_llm_cost ON telemetry_events(created_at, cost)
     WHERE execution_type = 'llm' AND cost IS NOT NULL;
+
+-- Index for version analytics
+CREATE INDEX idx_events_client_version ON telemetry_events(client_version)
+    WHERE client_version IS NOT NULL;
 
 -- Full session transcripts for debugging
 CREATE TABLE session_transcripts (

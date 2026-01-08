@@ -59,6 +59,9 @@ export interface TelemetryEvent {
 
   // Cost tracking (USD)
   cost?: number;
+
+  // Client version (e.g., "1.0.42")
+  clientVersion?: string;
 }
 
 export interface BatchTelemetryRequest {

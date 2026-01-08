@@ -37,6 +37,8 @@ export async function insertTelemetryEvents(
     reasoning_tokens: e.reasoningTokens ?? null,
     // Cost tracking (USD)
     cost: e.cost ?? null,
+    // Client version
+    client_version: e.clientVersion ?? null,
   }));
 
   await sql`INSERT INTO telemetry_events ${sql(values)}`;

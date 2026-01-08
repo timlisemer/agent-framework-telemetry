@@ -55,6 +55,9 @@ const eventSchema = z.object({
 
   // Cost tracking (USD)
   cost: z.number().min(0).optional(),
+
+  // Client version (e.g., "1.0.42")
+  clientVersion: z.string().max(20).optional(),
 });
 
 const batchSchema = z.object({
