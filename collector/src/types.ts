@@ -40,6 +40,10 @@ export interface TelemetryEvent {
   modelTier?: ModelTier;
   // Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo) - required if executionType is 'llm'
   modelName?: string;
+  // Whether agent executed without internal errors (distinct from decision)
+  success: boolean;
+  // Number of LLM errors/retries before completion (0 if none)
+  errorCount: number;
 
   // Optional fields
   timestamp?: string;

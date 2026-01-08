@@ -36,6 +36,10 @@ const eventSchema = z.object({
   modelTier: z.enum(["haiku", "sonnet", "opus"]).optional(),
   // Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo) - required if executionType is 'llm'
   modelName: z.string().optional(),
+  // Whether agent executed without internal errors (distinct from decision)
+  success: z.boolean(),
+  // Number of LLM errors/retries before completion (0 if none)
+  errorCount: z.number().int().min(0),
 
   // Optional fields
   timestamp: z.string().optional(),

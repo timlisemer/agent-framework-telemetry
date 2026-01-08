@@ -96,6 +96,8 @@ Batch insert telemetry events.
 | `latencyMs` | number | Yes | Operation latency in milliseconds |
 | `modelTier` | enum | No* | Model tier: `haiku`, `sonnet`, `opus` (*Required if `executionType` is `llm`) |
 | `modelName` | string | No* | Actual model name (e.g., `claude-3-haiku-20240307`) (*Required if `executionType` is `llm`) |
+| `success` | boolean | Yes | Whether agent executed without internal errors (distinct from decision) |
+| `errorCount` | number | Yes | Number of LLM errors/retries before completion (0 if none) |
 | `timestamp` | string | No | ISO 8601 timestamp (defaults to server time) |
 | `decisionReason` | string | No | Explanation for the decision |
 | `extraData` | object | No | Additional arbitrary data (stored as JSONB) |
@@ -125,7 +127,16 @@ Batch insert telemetry events.
 | `DENY` | Authorization | Agent blocked tool execution |
 | `CONFIRM` | Quality | Check/confirm agent validated code |
 | `SUCCESS` | Outcome | Operation completed without errors |
-| `ERROR` | Outcome | Provider error occurred (API failures, timeouts, etc.) |
+| `ERROR` | Outcome | Agent failed to execute (no decision was made) |
+
+**Important:** `decision` and `success` are different concepts:
+- `decision` = The agent's choice about the tool/action
+- `success` = Whether the agent itself ran without internal errors
+
+Examples:
+- Agent works correctly, blocks dangerous command: `success: true`, `decision: "DENY"`
+- Agent works correctly, allows safe command: `success: true`, `decision: "APPROVE"`
+- Agent crashes due to LLM API timeout: `success: false`, `decision: "ERROR"`
 
 #### Mode Types
 
@@ -161,6 +172,8 @@ Batch insert telemetry events.
       "latencyMs": 150,
       "modelTier": "haiku",
       "modelName": "claude-3-haiku-20240307",
+      "success": true,
+      "errorCount": 0,
       "decisionReason": "Command is safe to execute"
     }
   ]
@@ -184,6 +197,8 @@ Batch insert telemetry events.
       "toolName": "Bash",
       "workingDir": "/home/user/project",
       "latencyMs": 5,
+      "success": true,
+      "errorCount": 0,
       "decisionReason": "Auto-acknowledged error notification"
     }
   ]
@@ -334,6 +349,8 @@ Main table for storing telemetry events.
 | `latency_ms` | INTEGER | No | Latency in ms |
 | `model_tier` | VARCHAR(16) | Yes | Model tier (null for typescript) |
 | `model_name` | VARCHAR(128) | Yes | Model name (null for typescript) |
+| `success` | BOOLEAN | No | Whether agent executed without internal errors |
+| `error_count` | INTEGER | No | Number of LLM errors/retries |
 | `extra_data` | JSONB | Yes | Additional data |
 | `created_at` | TIMESTAMPTZ | No | Event timestamp |
 

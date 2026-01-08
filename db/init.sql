@@ -21,6 +21,10 @@ CREATE TABLE telemetry_events (
     model_tier VARCHAR(16),
     -- Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo), NULL for typescript execution
     model_name VARCHAR(128),
+    -- Whether agent executed without internal errors (distinct from decision)
+    success BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Number of LLM errors/retries before completion
+    error_count INTEGER NOT NULL DEFAULT 0,
     extra_data JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -43,6 +47,9 @@ CREATE INDEX idx_events_denials ON telemetry_events(agent_name, created_at)
 -- Partial index for error analysis
 CREATE INDEX idx_events_errors ON telemetry_events(agent_name, created_at)
     WHERE decision = 'ERROR';
+
+-- Index for agent success analysis
+CREATE INDEX idx_events_success ON telemetry_events(success, created_at);
 
 -- Index for mode queries
 CREATE INDEX idx_events_mode ON telemetry_events(mode);

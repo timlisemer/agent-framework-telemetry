@@ -330,7 +330,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Success Rate: Percentage of non-ERROR decisions (returns 0 when empty)\nSELECT COALESCE(ROUND(100.0 * SUM(CASE WHEN decision != 'ERROR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1), 0) as rate FROM telemetry_events WHERE created_at > NOW() - INTERVAL '24 hours'",
+          "rawSql": "-- Success Rate: Percentage of successful agent executions (returns 0 when empty)\nSELECT COALESCE(ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1), 0) as rate FROM telemetry_events WHERE created_at > NOW() - INTERVAL '24 hours'",
           "refId": "A"
         }
       ],
@@ -781,7 +781,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Host Health: Per-host metrics with approval and success rates\nSELECT\n  host_id,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) as errors,\n  MAX(created_at) as last_seen,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN decision != 'ERROR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY host_id\nORDER BY total_events DESC",
+          "rawSql": "-- Host Health: Per-host metrics with approval and success rates\nSELECT\n  host_id,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as errors,\n  MAX(created_at) as last_seen,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY host_id\nORDER BY total_events DESC",
           "refId": "A"
         }
       ],
@@ -964,7 +964,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Agent Statistics: Per-agent metrics to identify broken/unused agents\nSELECT\n  agent_name,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) as errors,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN decision != 'ERROR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate,\n  ROUND(AVG(latency_ms)) as avg_latency,\n  MAX(created_at) as last_seen\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY total_events DESC",
+          "rawSql": "-- Agent Statistics: Per-agent metrics to identify broken/unused agents\nSELECT\n  agent_name,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as errors,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate,\n  ROUND(AVG(latency_ms)) as avg_latency,\n  SUM(error_count) as total_llm_errors,\n  MAX(created_at) as last_seen\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY total_events DESC",
           "refId": "A"
         }
       ],

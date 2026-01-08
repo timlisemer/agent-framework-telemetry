@@ -22,6 +22,9 @@ export async function insertTelemetryEvents(
     // Optional model fields (required if executionType is 'llm')
     model_tier: e.modelTier ?? null,
     model_name: e.modelName ?? null,
+    // Agent execution success tracking
+    success: e.success,
+    error_count: e.errorCount,
     // Optional fields
     decision_reason: e.decisionReason ?? null,
     extra_data: e.extraData ? JSON.stringify(e.extraData) : null,
