@@ -1574,12 +1574,77 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Error Statistics: Error counts per agent and model tier\nSELECT\n  agent_name,\n  model_tier,\n  SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) as total_errors,\n  COUNT(*) as total_events,\n  ROUND(100.0 * SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) as error_rate\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name, model_tier\nHAVING SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) > 0\nORDER BY total_errors DESC",
+          "rawSql": "-- Error Statistics: Error counts per agent and model tier\nSELECT\n  agent_name,\n  COALESCE(model_tier, 'N/A') as model_tier,\n  SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) as total_errors,\n  COUNT(*) as total_events,\n  ROUND(100.0 * SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) as error_rate\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name, COALESCE(model_tier, 'N/A')\nHAVING SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) > 0\nORDER BY total_errors DESC",
           "refId": "A"
         }
       ],
       "title": "Error Statistics",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 80
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value", "percent"]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Execution Type Distribution: LLM vs TypeScript agents\nSELECT\n  execution_type,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY execution_type\nORDER BY events DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Execution Type",
+      "type": "piechart"
     }
   ],
   "refresh": "30s",

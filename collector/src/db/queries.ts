@@ -14,12 +14,14 @@ export async function insertTelemetryEvents(
     agent_name: e.agentName,
     hook_name: e.hookName,
     mode: e.mode,
+    execution_type: e.executionType,
     decision: e.decision,
     tool_name: e.toolName,
     working_dir: e.workingDir,
     latency_ms: e.latencyMs,
-    model_tier: e.modelTier,
-    model_name: e.modelName,
+    // Optional model fields (required if executionType is 'llm')
+    model_tier: e.modelTier ?? null,
+    model_name: e.modelName ?? null,
     // Optional fields
     decision_reason: e.decisionReason ?? null,
     extra_data: e.extraData ? JSON.stringify(e.extraData) : null,

@@ -30,10 +30,12 @@ const eventSchema = z.object({
   workingDir: z.string(),
   // Operation latency in milliseconds
   latencyMs: z.number(),
-  // Model tier category (haiku, sonnet, opus)
-  modelTier: z.enum(["haiku", "sonnet", "opus"]),
-  // Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo)
-  modelName: z.string(),
+  // Execution type: llm (uses AI model) or typescript (pure code)
+  executionType: z.enum(["llm", "typescript"]),
+  // Model tier category (haiku, sonnet, opus) - required if executionType is 'llm'
+  modelTier: z.enum(["haiku", "sonnet", "opus"]).optional(),
+  // Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo) - required if executionType is 'llm'
+  modelName: z.string().optional(),
 
   // Optional fields
   timestamp: z.string().optional(),

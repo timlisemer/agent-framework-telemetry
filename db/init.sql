@@ -9,16 +9,18 @@ CREATE TABLE telemetry_events (
     hook_name VARCHAR(64) NOT NULL,
     -- Execution mode: direct or lazy
     mode VARCHAR(16) NOT NULL,
+    -- Execution type: llm (uses AI model) or typescript (pure code)
+    execution_type VARCHAR(16) NOT NULL,
     -- Decision: APPROVE, DENY, CONFIRM, SUCCESS, ERROR
     decision VARCHAR(32) NOT NULL,
     decision_reason TEXT,
     tool_name VARCHAR(64) NOT NULL,
     working_dir VARCHAR(512) NOT NULL,
     latency_ms INTEGER NOT NULL,
-    -- Model tier (haiku, sonnet, opus) - static category
-    model_tier VARCHAR(16) NOT NULL,
-    -- Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo)
-    model_name VARCHAR(128) NOT NULL,
+    -- Model tier (haiku, sonnet, opus) - static category, NULL for typescript execution
+    model_tier VARCHAR(16),
+    -- Actual model name from LLM provider (e.g., claude-3-haiku-20240307, gpt-4-turbo), NULL for typescript execution
+    model_name VARCHAR(128),
     extra_data JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -44,6 +46,9 @@ CREATE INDEX idx_events_errors ON telemetry_events(agent_name, created_at)
 
 -- Index for mode queries
 CREATE INDEX idx_events_mode ON telemetry_events(mode);
+
+-- Index for execution type queries
+CREATE INDEX idx_events_execution_type ON telemetry_events(execution_type);
 
 -- Index for model analytics
 CREATE INDEX idx_events_model_name ON telemetry_events(model_name);
