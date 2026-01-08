@@ -914,6 +914,86 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "direct_mode_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lazy_mode_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_exec_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ts_exec_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "avg_latency"
             },
             "properties": [
@@ -964,7 +1044,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Agent Statistics: Per-agent metrics to identify broken/unused agents\nSELECT\n  agent_name,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as errors,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate,\n  ROUND(AVG(latency_ms)) as avg_latency,\n  SUM(error_count) as total_llm_errors,\n  MAX(created_at) as last_seen\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY total_events DESC",
+          "rawSql": "-- Agent Statistics: Per-agent metrics to identify broken/unused agents\nSELECT\n  agent_name,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as errors,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate,\n  ROUND(100.0 * SUM(CASE WHEN mode = 'direct' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as direct_mode_pct,\n  ROUND(100.0 * SUM(CASE WHEN mode = 'lazy' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as lazy_mode_pct,\n  ROUND(100.0 * SUM(CASE WHEN execution_type = 'llm' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as llm_exec_pct,\n  ROUND(100.0 * SUM(CASE WHEN execution_type = 'typescript' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as ts_exec_pct,\n  ROUND(AVG(latency_ms)) as avg_latency,\n  SUM(error_count) as total_llm_errors,\n  MAX(created_at) as last_seen\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY total_events DESC",
           "refId": "A"
         }
       ],
