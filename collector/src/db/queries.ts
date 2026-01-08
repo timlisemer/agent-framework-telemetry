@@ -29,6 +29,14 @@ export async function insertTelemetryEvents(
     decision_reason: e.decisionReason ?? null,
     extra_data: e.extraData ? JSON.stringify(e.extraData) : null,
     created_at: e.timestamp || new Date().toISOString(),
+    // Token usage (only for executionType='llm')
+    prompt_tokens: e.promptTokens ?? null,
+    completion_tokens: e.completionTokens ?? null,
+    total_tokens: e.totalTokens ?? null,
+    cached_tokens: e.cachedTokens ?? null,
+    reasoning_tokens: e.reasoningTokens ?? null,
+    // Cost tracking (USD)
+    cost: e.cost ?? null,
   }));
 
   await sql`INSERT INTO telemetry_events ${sql(values)}`;

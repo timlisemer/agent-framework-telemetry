@@ -22,8 +22,8 @@ const eventSchema = z.object({
   hookName: z.string(),
   // Execution mode: direct or lazy
   mode: z.enum(["direct", "lazy"]),
-  // Decision result: APPROVE, DENY, CONFIRM, SUCCESS, ERROR
-  decision: z.enum(["APPROVE", "DENY", "CONFIRM", "SUCCESS", "ERROR"]),
+  // Decision result: APPROVE, CONTINUE, DENY, CONFIRM, SUCCESS, ERROR
+  decision: z.enum(["APPROVE", "CONTINUE", "DENY", "CONFIRM", "SUCCESS", "ERROR"]),
   // Name of the tool being executed
   toolName: z.string(),
   // Working directory path
@@ -45,6 +45,16 @@ const eventSchema = z.object({
   timestamp: z.string().optional(),
   decisionReason: z.string().optional(),
   extraData: z.record(z.unknown()).optional(),
+
+  // Token usage (only for executionType='llm')
+  promptTokens: z.number().int().min(0).optional(),
+  completionTokens: z.number().int().min(0).optional(),
+  totalTokens: z.number().int().min(0).optional(),
+  cachedTokens: z.number().int().min(0).optional(),
+  reasoningTokens: z.number().int().min(0).optional(),
+
+  // Cost tracking (USD)
+  cost: z.number().min(0).optional(),
 });
 
 const batchSchema = z.object({

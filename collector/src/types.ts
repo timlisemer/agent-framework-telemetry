@@ -14,7 +14,7 @@ export type Mode = "direct" | "lazy";
 export type ExecutionType = "llm" | "typescript";
 
 // Core decision types
-export type Decision = "APPROVE" | "DENY" | "CONFIRM" | "SUCCESS" | "ERROR";
+export type Decision = "APPROVE" | "CONTINUE" | "DENY" | "CONFIRM" | "SUCCESS" | "ERROR";
 
 export interface TelemetryEvent {
   // Required fields
@@ -49,6 +49,16 @@ export interface TelemetryEvent {
   timestamp?: string;
   decisionReason?: string;
   extraData?: Record<string, unknown>;
+
+  // Token usage (only for executionType='llm')
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  cachedTokens?: number;
+  reasoningTokens?: number;
+
+  // Cost tracking (USD)
+  cost?: number;
 }
 
 export interface BatchTelemetryRequest {

@@ -26,7 +26,15 @@ CREATE TABLE telemetry_events (
     -- Number of LLM errors/retries before completion
     error_count INTEGER NOT NULL DEFAULT 0,
     extra_data JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- Token usage (only for execution_type='llm')
+    prompt_tokens INTEGER,
+    completion_tokens INTEGER,
+    total_tokens INTEGER,
+    cached_tokens INTEGER,
+    reasoning_tokens INTEGER,
+    -- Cost tracking (USD)
+    cost DECIMAL(12, 8)
 );
 
 -- Indexes for common query patterns
@@ -62,6 +70,13 @@ CREATE INDEX idx_events_model_name ON telemetry_events(model_name);
 
 -- Index for hook analytics
 CREATE INDEX idx_events_hook_name ON telemetry_events(hook_name);
+
+-- Index for cost queries
+CREATE INDEX idx_events_cost ON telemetry_events(cost) WHERE cost IS NOT NULL;
+
+-- Composite index for LLM cost analytics
+CREATE INDEX idx_events_llm_cost ON telemetry_events(created_at, cost)
+    WHERE execution_type = 'llm' AND cost IS NOT NULL;
 
 -- Full session transcripts for debugging
 CREATE TABLE session_transcripts (
