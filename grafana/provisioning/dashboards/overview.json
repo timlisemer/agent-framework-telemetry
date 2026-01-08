@@ -62,11 +62,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as count FROM telemetry_events WHERE created_at > NOW() - INTERVAL '24 hours'",
+          "rawSql": "SELECT COUNT(*) as count FROM telemetry_events WHERE created_at BETWEEN $__timeFrom() AND $__timeTo()",
           "refId": "A"
         }
       ],
-      "title": "Total Events (24h)",
+      "title": "Total Events",
       "type": "stat"
     },
     {
@@ -131,7 +131,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Approval Rate: Percentage of APPROVE/CONFIRM/SUCCESS/CONTINUE decisions (returns 0 when empty)\nSELECT COALESCE(ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS','CONTINUE') THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1), 0) as rate FROM telemetry_events WHERE created_at > NOW() - INTERVAL '24 hours'",
+          "rawSql": "-- Approval Rate: Percentage of APPROVE/CONFIRM/SUCCESS/CONTINUE decisions (returns 0 when empty)\nSELECT COALESCE(ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS','CONTINUE') THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1), 0) as rate FROM telemetry_events WHERE created_at BETWEEN $__timeFrom() AND $__timeTo()",
           "refId": "A"
         }
       ],
@@ -200,7 +200,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Returns 0 instead of NULL when database is empty to avoid 'none' display in Grafana\nSELECT COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms), 0) as p95 FROM telemetry_events WHERE created_at > NOW() - INTERVAL '24 hours' AND latency_ms IS NOT NULL",
+          "rawSql": "-- Returns 0 instead of NULL when database is empty to avoid 'none' display in Grafana\nSELECT COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms), 0) as p95 FROM telemetry_events WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND latency_ms IS NOT NULL",
           "refId": "A"
         }
       ],
@@ -261,7 +261,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT host_id) as hosts FROM telemetry_events WHERE created_at > NOW() - INTERVAL '24 hours'",
+          "rawSql": "SELECT COUNT(DISTINCT host_id) as hosts FROM telemetry_events WHERE created_at BETWEEN $__timeFrom() AND $__timeTo()",
           "refId": "A"
         }
       ],
@@ -303,7 +303,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 12,
+        "w": 6,
         "x": 0,
         "y": 4
       },
@@ -330,7 +330,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Success Rate: Percentage of successful agent executions (returns 0 when empty)\nSELECT COALESCE(ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1), 0) as rate FROM telemetry_events WHERE created_at > NOW() - INTERVAL '24 hours'",
+          "rawSql": "-- Success Rate: Percentage of successful agent executions (returns 0 when empty)\nSELECT COALESCE(ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1), 0) as rate FROM telemetry_events WHERE created_at BETWEEN $__timeFrom() AND $__timeTo()",
           "refId": "A"
         }
       ],
@@ -364,8 +364,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 12,
-        "x": 12,
+        "w": 6,
+        "x": 6,
         "y": 4
       },
       "id": 10,
@@ -391,11 +391,72 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Active Agents: Number of distinct agents that sent events in the last 24 hours\nSELECT COUNT(DISTINCT agent_name) as agents FROM telemetry_events WHERE created_at > NOW() - INTERVAL '24 hours'",
+          "rawSql": "-- Active Agents: Number of distinct agents that sent events\nSELECT COUNT(DISTINCT agent_name) as agents FROM telemetry_events WHERE created_at BETWEEN $__timeFrom() AND $__timeTo()",
           "refId": "A"
         }
       ],
       "title": "Active Agents",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 4
+      },
+      "id": 22,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Distinct Models: Number of distinct models used\nSELECT COUNT(DISTINCT model_name) as models\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND model_name IS NOT NULL",
+          "refId": "A"
+        }
+      ],
+      "title": "Distinct Models",
       "type": "stat"
     },
     {
@@ -529,279 +590,12 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "-- Decisions Over Time: Wide format for Grafana time_series compatibility\nSELECT\n  date_trunc('hour', created_at) AS time,\n  SUM(CASE WHEN decision = 'CONTINUE' THEN 1 ELSE 0 END) as \"Continued\",\n  SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS') THEN 1 ELSE 0 END) as \"Approved\",\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as \"Denied\",\n  SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) as \"Errors\"\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "-- Decisions Over Time: Wide format for Grafana time_series compatibility\nSELECT\n  date_trunc('hour', created_at) AS time,\n  SUM(CASE WHEN decision = 'CONTINUE' THEN 1 ELSE 0 END) as \"Continued\",\n  SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS') THEN 1 ELSE 0 END) as \"Approved\",\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as \"Denied\",\n  SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) as \"Errors\"\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY 1\nORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "Decisions Over Time",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "PostgreSQL"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 20
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 32
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PostgreSQL"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "-- Tool Denial Rate: Wide format aggregated denial rate across all tools\nSELECT\n  date_trunc('hour', created_at) AS time,\n  100.0 * SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) / COUNT(*) as \"Denial Rate\"\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY 1\nORDER BY 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Tool Denial Rate",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "PostgreSQL"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "approval_rate"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 80
-                    },
-                    {
-                      "color": "green",
-                      "value": 95
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "success_rate"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 80
-                    },
-                    {
-                      "color": "green",
-                      "value": 95
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "last_seen"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "dateTimeAsIso"
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 7,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": ["sum"],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PostgreSQL"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "-- Host Health: Per-host metrics with approval and success rates\nSELECT\n  host_id,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as errors,\n  MAX(created_at) as last_seen,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS','CONTINUE') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY host_id\nORDER BY total_events DESC",
-          "refId": "A"
-        }
-      ],
-      "title": "Host Health",
-      "type": "table"
     },
     {
       "datasource": {
@@ -1059,12 +853,279 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Agent Statistics: Per-agent metrics to identify broken/unused agents\nSELECT\n  agent_name,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as errors,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS','CONTINUE') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate,\n  ROUND(100.0 * SUM(CASE WHEN mode = 'direct' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as direct_mode_rate,\n  ROUND(100.0 * SUM(CASE WHEN mode = 'lazy' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as lazy_mode_rate,\n  ROUND(100.0 * SUM(CASE WHEN execution_type = 'llm' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as llm_exec_rate,\n  ROUND(100.0 * SUM(CASE WHEN execution_type = 'typescript' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as ts_exec_rate,\n  ROUND(AVG(CASE WHEN execution_type = 'llm' THEN latency_ms END)) as avg_llm_latency,\n  SUM(error_count) as total_llm_errors,\n  MAX(created_at) as last_seen\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY total_events DESC",
+          "rawSql": "-- Agent Statistics: Per-agent metrics to identify broken/unused agents\nSELECT\n  agent_name,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as errors,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS','CONTINUE') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate,\n  ROUND(100.0 * SUM(CASE WHEN mode = 'direct' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as direct_mode_rate,\n  ROUND(100.0 * SUM(CASE WHEN mode = 'lazy' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as lazy_mode_rate,\n  ROUND(100.0 * SUM(CASE WHEN execution_type = 'llm' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as llm_exec_rate,\n  ROUND(100.0 * SUM(CASE WHEN execution_type = 'typescript' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as ts_exec_rate,\n  ROUND(AVG(CASE WHEN execution_type = 'llm' THEN latency_ms END)) as avg_llm_latency,\n  SUM(error_count) as total_llm_errors,\n  MAX(created_at) as last_seen\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY agent_name\nORDER BY total_events DESC",
           "refId": "A"
         }
       ],
       "title": "Agent Statistics",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "approval_rate"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 80
+                    },
+                    {
+                      "color": "green",
+                      "value": 95
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "success_rate"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 80
+                    },
+                    {
+                      "color": "green",
+                      "value": 95
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_seen"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- Host Health: Per-host metrics with approval and success rates\nSELECT\n  host_id,\n  COUNT(*) as total_events,\n  COUNT(DISTINCT session_id) as sessions,\n  SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) as denials,\n  SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as errors,\n  MAX(created_at) as last_seen,\n  ROUND(100.0 * SUM(CASE WHEN decision IN ('APPROVE','CONFIRM','SUCCESS','CONTINUE') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as approval_rate,\n  ROUND(100.0 * SUM(CASE WHEN success = true THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) as success_rate\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY host_id\nORDER BY total_events DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Host Health",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "-- Tool Denial Rate: Wide format aggregated denial rate across all tools\nSELECT\n  date_trunc('hour', created_at) AS time,\n  100.0 * SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) / COUNT(*) as \"Denial Rate\"\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY 1\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Tool Denial Rate",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -1124,7 +1185,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Events per Host: Distribution of total events across hosts\nSELECT\n  host_id,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY host_id\nORDER BY events DESC",
+          "rawSql": "-- Events per Host: Distribution of total events across hosts\nSELECT\n  host_id,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY host_id\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1189,7 +1250,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Events per Agent: Distribution of total events across agents\nSELECT\n  agent_name,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY events DESC",
+          "rawSql": "-- Events per Agent: Distribution of total events across agents\nSELECT\n  agent_name,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY agent_name\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1254,7 +1315,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Model Usage: Distribution by model tier (haiku/sonnet/opus)\nSELECT\n  model_tier,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\n  AND model_tier IS NOT NULL\nGROUP BY model_tier\nORDER BY events DESC",
+          "rawSql": "-- Model Usage: Distribution by model tier (haiku/sonnet/opus)\nSELECT\n  model_tier,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND model_tier IS NOT NULL\nGROUP BY model_tier\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1319,7 +1380,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Model Names: Distribution by actual model name\nSELECT\n  model_name,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\n  AND model_name IS NOT NULL\nGROUP BY model_name\nORDER BY events DESC",
+          "rawSql": "-- Model Names: Distribution by actual model name\nSELECT\n  model_name,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND model_name IS NOT NULL\nGROUP BY model_name\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1384,7 +1445,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Hook Activity: Distribution by hook name\nSELECT\n  hook_name,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\n  AND hook_name IS NOT NULL\nGROUP BY hook_name\nORDER BY events DESC",
+          "rawSql": "-- Hook Activity: Distribution by hook name\nSELECT\n  hook_name,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND hook_name IS NOT NULL\nGROUP BY hook_name\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1449,7 +1510,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Event Types: Distribution by event type\nSELECT\n  event_type,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY event_type\nORDER BY events DESC",
+          "rawSql": "-- Event Types: Distribution by event type\nSELECT\n  event_type,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY event_type\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1514,7 +1575,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Mode Distribution: Distribution by execution mode (direct/lazy)\nSELECT\n  mode,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY mode\nORDER BY events DESC",
+          "rawSql": "-- Mode Distribution: Distribution by execution mode (direct/lazy)\nSELECT\n  mode,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY mode\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1579,7 +1640,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Decision Distribution: Distribution by decision type\nSELECT\n  decision,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY decision\nORDER BY events DESC",
+          "rawSql": "-- Decision Distribution: Distribution by decision type\nSELECT\n  decision,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY decision\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1669,7 +1730,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Error Statistics: Error counts per agent and model tier\nSELECT\n  agent_name,\n  COALESCE(model_tier, 'N/A') as model_tier,\n  SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) as total_errors,\n  COUNT(*) as total_events,\n  ROUND(100.0 * SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) as error_rate\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name, COALESCE(model_tier, 'N/A')\nHAVING SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) > 0\nORDER BY total_errors DESC",
+          "rawSql": "-- Error Statistics: Error counts per agent and model tier\nSELECT\n  agent_name,\n  COALESCE(model_tier, 'N/A') as model_tier,\n  SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) as total_errors,\n  COUNT(*) as total_events,\n  ROUND(100.0 * SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) as error_rate\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY agent_name, COALESCE(model_tier, 'N/A')\nHAVING SUM(CASE WHEN decision = 'ERROR' THEN 1 ELSE 0 END) > 0\nORDER BY total_errors DESC",
           "refId": "A"
         }
       ],
@@ -1734,7 +1795,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Execution Type Distribution: LLM vs TypeScript agents\nSELECT\n  execution_type,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY execution_type\nORDER BY events DESC",
+          "rawSql": "-- Execution Type Distribution: LLM vs TypeScript agents\nSELECT\n  execution_type,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY execution_type\nORDER BY events DESC",
           "refId": "A"
         }
       ],
@@ -1799,7 +1860,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Client Versions: Distribution by client version\nSELECT\n  client_version,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at > NOW() - INTERVAL '24 hours'\n  AND client_version IS NOT NULL\nGROUP BY client_version\nORDER BY events DESC",
+          "rawSql": "-- Client Versions: Distribution by client version\nSELECT\n  client_version,\n  COUNT(*) as events\nFROM telemetry_events\nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND client_version IS NOT NULL\nGROUP BY client_version\nORDER BY events DESC",
           "refId": "A"
         }
       ],

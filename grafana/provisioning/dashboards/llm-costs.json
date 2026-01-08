@@ -70,11 +70,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Total Cost (24h): Sum of all LLM costs in the last 24 hours\nSELECT COALESCE(SUM(cost), 0) as total_cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND cost IS NOT NULL",
+          "rawSql": "-- Total Cost: Sum of all LLM costs in selected time range\nSELECT COALESCE(SUM(cost), 0) as total_cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND cost IS NOT NULL",
           "refId": "A"
         }
       ],
-      "title": "Total Cost (24h)",
+      "title": "Total Cost",
       "type": "stat"
     },
     {
@@ -139,7 +139,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Avg Cost per Request: Average cost per LLM call\nSELECT COALESCE(AVG(cost), 0) as avg_cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND cost IS NOT NULL",
+          "rawSql": "-- Avg Cost per Request: Average cost per LLM call\nSELECT COALESCE(AVG(cost), 0) as avg_cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND cost IS NOT NULL",
           "refId": "A"
         }
       ],
@@ -200,11 +200,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Total Tokens (24h): Sum of all tokens in the last 24 hours\nSELECT COALESCE(SUM(total_tokens), 0) as total_tokens\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND total_tokens IS NOT NULL",
+          "rawSql": "-- Total Tokens: Sum of all tokens in selected time range\nSELECT COALESCE(SUM(total_tokens), 0) as total_tokens\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND total_tokens IS NOT NULL",
           "refId": "A"
         }
       ],
-      "title": "Total Tokens (24h)",
+      "title": "Total Tokens",
       "type": "stat"
     },
     {
@@ -269,11 +269,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Avg Daily Cost (Active Days): Average cost for days with usage\nWITH daily_costs AS (\n  SELECT DATE(created_at) as day, SUM(cost) as day_cost\n  FROM telemetry_events\n  WHERE execution_type = 'llm' AND cost IS NOT NULL\n  GROUP BY DATE(created_at)\n  HAVING SUM(cost) > 0\n)\nSELECT COALESCE(AVG(day_cost), 0) as avg_active_day_cost\nFROM daily_costs",
+          "rawSql": "-- Total Cost (All Time): Lifetime cost across all LLM calls\nSELECT COALESCE(SUM(cost), 0) as total_cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND cost IS NOT NULL",
           "refId": "A"
         }
       ],
-      "title": "Avg Daily Cost (Active Days)",
+      "title": "Total Cost (All Time)",
       "type": "stat"
     },
     {
@@ -330,11 +330,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- LLM Requests (24h): Count of LLM calls\nSELECT COUNT(*) as llm_requests\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'",
+          "rawSql": "-- LLM Requests: Count of LLM calls\nSELECT COUNT(*) as llm_requests\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()",
           "refId": "A"
         }
       ],
-      "title": "LLM Requests (24h)",
+      "title": "LLM Requests",
       "type": "stat"
     },
     {
@@ -391,7 +391,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Avg Tokens per Request\nSELECT COALESCE(ROUND(AVG(total_tokens)), 0) as avg_tokens\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND total_tokens IS NOT NULL",
+          "rawSql": "-- Avg Tokens per Request\nSELECT COALESCE(ROUND(AVG(total_tokens)), 0) as avg_tokens\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND total_tokens IS NOT NULL",
           "refId": "A"
         }
       ],
@@ -460,7 +460,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Cache Hit Rate: Percentage of cached tokens\nSELECT COALESCE(\n  ROUND(100.0 * SUM(cached_tokens) / NULLIF(SUM(prompt_tokens), 0), 1),\n  0\n) as cache_rate\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND prompt_tokens IS NOT NULL",
+          "rawSql": "-- Cache Hit Rate: Percentage of cached tokens\nSELECT COALESCE(\n  ROUND(100.0 * SUM(cached_tokens) / NULLIF(SUM(prompt_tokens), 0), 1),\n  0\n) as cache_rate\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND prompt_tokens IS NOT NULL",
           "refId": "A"
         }
       ],
@@ -478,17 +478,25 @@
             "mode": "thresholds"
           },
           "mappings": [],
-          "noValue": "0",
+          "noValue": "$0.00",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
@@ -521,11 +529,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Distinct Models Used (24h)\nSELECT COUNT(DISTINCT model_name) as models\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND model_name IS NOT NULL",
+          "rawSql": "-- Avg Daily Cost (Active Days): Average cost for days with usage\nWITH daily_costs AS (\n  SELECT DATE(created_at) as day, SUM(cost) as day_cost\n  FROM telemetry_events\n  WHERE execution_type = 'llm' AND cost IS NOT NULL\n  GROUP BY DATE(created_at)\n  HAVING SUM(cost) > 0\n)\nSELECT COALESCE(AVG(day_cost), 0) as avg_active_day_cost\nFROM daily_costs",
           "refId": "A"
         }
       ],
-      "title": "Distinct Models (24h)",
+      "title": "Avg Daily Cost (Active Days)",
       "type": "stat"
     },
     {
@@ -613,7 +621,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "-- Cost Over Time: Hourly cost\nSELECT\n  date_trunc('hour', created_at) AS time,\n  SUM(cost) as \"Cost\"\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND cost IS NOT NULL\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "-- Cost Over Time: Hourly cost\nSELECT\n  date_trunc('hour', created_at) AS time,\n  SUM(cost) as \"Cost\"\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND cost IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -766,7 +774,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "-- Tokens Over Time: Stacked bar chart by token type\nSELECT\n  date_trunc('hour', created_at) AS time,\n  COALESCE(SUM(prompt_tokens) - SUM(COALESCE(cached_tokens, 0)), 0) as \"Prompt\",\n  COALESCE(SUM(completion_tokens) - SUM(COALESCE(reasoning_tokens, 0)), 0) as \"Completion\",\n  COALESCE(SUM(cached_tokens), 0) as \"Cached\",\n  COALESCE(SUM(reasoning_tokens), 0) as \"Reasoning\"\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "-- Tokens Over Time: Stacked bar chart by token type\nSELECT\n  date_trunc('hour', created_at) AS time,\n  COALESCE(SUM(prompt_tokens) - SUM(COALESCE(cached_tokens, 0)), 0) as \"Prompt\",\n  COALESCE(SUM(completion_tokens) - SUM(COALESCE(reasoning_tokens, 0)), 0) as \"Completion\",\n  COALESCE(SUM(cached_tokens), 0) as \"Cached\",\n  COALESCE(SUM(reasoning_tokens), 0) as \"Reasoning\"\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY 1\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -869,7 +877,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Cost per Agent: Breakdown by agent\nSELECT\n  agent_name,\n  COUNT(*) as requests,\n  SUM(cost) as total_cost,\n  AVG(cost) as avg_cost,\n  SUM(total_tokens) as total_tokens\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND cost IS NOT NULL\nGROUP BY agent_name\nORDER BY total_cost DESC",
+          "rawSql": "-- Cost per Agent: Breakdown by agent\nSELECT\n  agent_name,\n  COUNT(*) as requests,\n  SUM(cost) as total_cost,\n  AVG(cost) as avg_cost,\n  SUM(total_tokens) as total_tokens\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND cost IS NOT NULL\nGROUP BY agent_name\nORDER BY total_cost DESC",
           "refId": "A"
         }
       ],
@@ -972,7 +980,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Cost per Host: Breakdown by host\nSELECT\n  host_id,\n  COUNT(*) as requests,\n  SUM(cost) as total_cost,\n  AVG(cost) as avg_cost,\n  SUM(total_tokens) as total_tokens\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND cost IS NOT NULL\nGROUP BY host_id\nORDER BY total_cost DESC",
+          "rawSql": "-- Cost per Host: Breakdown by host\nSELECT\n  host_id,\n  COUNT(*) as requests,\n  SUM(cost) as total_cost,\n  AVG(cost) as avg_cost,\n  SUM(total_tokens) as total_tokens\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND cost IS NOT NULL\nGROUP BY host_id\nORDER BY total_cost DESC",
           "refId": "A"
         }
       ],
@@ -1038,7 +1046,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Cost by Model: Breakdown by model name\nSELECT\n  model_name,\n  SUM(cost) as cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND cost IS NOT NULL\n  AND model_name IS NOT NULL\nGROUP BY model_name\nORDER BY cost DESC",
+          "rawSql": "-- Cost by Model: Breakdown by model name\nSELECT\n  model_name,\n  SUM(cost) as cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND cost IS NOT NULL\n  AND model_name IS NOT NULL\nGROUP BY model_name\nORDER BY cost DESC",
           "refId": "A"
         }
       ],
@@ -1104,7 +1112,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Cost by Model Tier: Breakdown by tier\nSELECT\n  model_tier,\n  SUM(cost) as cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\n  AND cost IS NOT NULL\n  AND model_tier IS NOT NULL\nGROUP BY model_tier\nORDER BY cost DESC",
+          "rawSql": "-- Cost by Model Tier: Breakdown by tier\nSELECT\n  model_tier,\n  SUM(cost) as cost\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n  AND cost IS NOT NULL\n  AND model_tier IS NOT NULL\nGROUP BY model_tier\nORDER BY cost DESC",
           "refId": "A"
         }
       ],
@@ -1239,7 +1247,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Agent Cost Statistics: Full breakdown per agent\nSELECT\n  agent_name,\n  COUNT(*) as requests,\n  SUM(cost) as total_cost,\n  AVG(cost) as avg_cost,\n  SUM(prompt_tokens) as prompt_tokens,\n  SUM(completion_tokens) as completion_tokens,\n  SUM(total_tokens) as total_tokens,\n  SUM(cached_tokens) as cached_tokens,\n  SUM(reasoning_tokens) as reasoning_tokens,\n  ROUND(100.0 * SUM(COALESCE(cached_tokens, 0)) / NULLIF(SUM(prompt_tokens), 0), 1) as cache_rate,\n  ROUND(AVG(latency_ms)) as avg_latency\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at > NOW() - INTERVAL '24 hours'\nGROUP BY agent_name\nORDER BY total_cost DESC NULLS LAST",
+          "rawSql": "-- Agent Cost Statistics: Full breakdown per agent\nSELECT\n  agent_name,\n  COUNT(*) as requests,\n  SUM(cost) as total_cost,\n  AVG(cost) as avg_cost,\n  SUM(prompt_tokens) as prompt_tokens,\n  SUM(completion_tokens) as completion_tokens,\n  SUM(total_tokens) as total_tokens,\n  SUM(cached_tokens) as cached_tokens,\n  SUM(reasoning_tokens) as reasoning_tokens,\n  ROUND(100.0 * SUM(COALESCE(cached_tokens, 0)) / NULLIF(SUM(prompt_tokens), 0), 1) as cache_rate,\n  ROUND(AVG(latency_ms)) as avg_latency\nFROM telemetry_events\nWHERE execution_type = 'llm'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY agent_name\nORDER BY total_cost DESC NULLS LAST",
           "refId": "A"
         }
       ],
