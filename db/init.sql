@@ -36,7 +36,11 @@ CREATE TABLE telemetry_events (
     -- Cost tracking (USD)
     cost DECIMAL(12, 8),
     -- Client version tracking
-    client_version VARCHAR(20)
+    client_version VARCHAR(20),
+    -- OpenRouter generation ID for async cost fetching (comma-separated for multi-turn)
+    generation_id VARCHAR(512),
+    -- Retry count for cost fetching failures
+    cost_fetch_retries INTEGER DEFAULT 0
 );
 
 -- Indexes for common query patterns
@@ -83,6 +87,10 @@ CREATE INDEX idx_events_llm_cost ON telemetry_events(created_at, cost)
 -- Index for version analytics
 CREATE INDEX idx_events_client_version ON telemetry_events(client_version)
     WHERE client_version IS NOT NULL;
+
+-- Index for finding events that need cost fetching
+CREATE INDEX idx_events_pending_cost ON telemetry_events(generation_id, created_at)
+    WHERE generation_id IS NOT NULL AND cost IS NULL AND (cost_fetch_retries IS NULL OR cost_fetch_retries < 3);
 
 -- Full session transcripts for debugging
 CREATE TABLE session_transcripts (

@@ -39,6 +39,8 @@ export async function insertTelemetryEvents(
     cost: e.cost ?? null,
     // Client version
     client_version: e.clientVersion ?? null,
+    // OpenRouter generation ID for async cost fetching
+    generation_id: e.generationId ?? null,
   }));
 
   await sql`INSERT INTO telemetry_events ${sql(values)}`;

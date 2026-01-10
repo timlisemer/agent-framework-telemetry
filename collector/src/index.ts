@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { telemetryRouter } from "./routes/telemetry.js";
 import { transcriptRouter } from "./routes/transcript.js";
 import { healthRouter } from "./routes/health.js";
+import { startCostFetcherWorker } from "./workers/cost-fetcher.js";
 
 const app = new Hono();
 
@@ -27,5 +28,8 @@ app.get("/", (c) =>
 
 const port = parseInt(process.env.PORT || "3001");
 console.log(`Collector starting on port ${port}`);
+
+// Start background worker for async cost fetching
+startCostFetcherWorker();
 
 export default { port, fetch: app.fetch };

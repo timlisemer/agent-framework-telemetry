@@ -406,6 +406,12 @@ Requires a local PostgreSQL instance with `DATABASE_URL` environment variable se
 
 ---
 
+## Testing
+
+This project does not have automated tests.
+
+---
+
 ## Rate Limits & Constraints
 
 | Constraint | Value |

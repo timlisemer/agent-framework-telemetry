@@ -58,6 +58,9 @@ const eventSchema = z.object({
 
   // Client version (e.g., "1.0.42")
   clientVersion: z.string().max(20).optional(),
+
+  // OpenRouter generation ID for async cost fetching (comma-separated for multi-turn)
+  generationId: z.string().max(512).optional(),
 });
 
 const batchSchema = z.object({

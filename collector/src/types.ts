@@ -62,6 +62,9 @@ export interface TelemetryEvent {
 
   // Client version (e.g., "1.0.42")
   clientVersion?: string;
+
+  // OpenRouter generation ID for async cost fetching (comma-separated for multi-turn)
+  generationId?: string;
 }
 
 export interface BatchTelemetryRequest {
