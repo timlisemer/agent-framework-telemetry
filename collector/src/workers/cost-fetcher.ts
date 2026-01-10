@@ -30,7 +30,14 @@ interface PendingEvent {
   retry_count: number;
 }
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+// Try OPENROUTER_API_KEY first, fall back to ANTHROPIC_AUTH_TOKEN (used by agent-framework clients)
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ?? process.env.ANTHROPIC_AUTH_TOKEN;
+const API_KEY_SOURCE = process.env.OPENROUTER_API_KEY
+  ? "OPENROUTER_API_KEY"
+  : process.env.ANTHROPIC_AUTH_TOKEN
+    ? "ANTHROPIC_AUTH_TOKEN (fallback)"
+    : null;
+
 const POLL_INTERVAL_MS = 10_000; // Check every 10 seconds
 const MAX_RETRIES = 3;
 const BATCH_SIZE = 50;
@@ -201,12 +208,14 @@ export async function processPendingCosts(): Promise<number> {
  */
 export function startCostFetcherWorker(): void {
   if (!OPENROUTER_API_KEY) {
-    console.log("[CostFetcher] No OPENROUTER_API_KEY - worker disabled");
+    console.log(
+      "[CostFetcher] No API key found (tried OPENROUTER_API_KEY, ANTHROPIC_AUTH_TOKEN) - worker disabled"
+    );
     return;
   }
 
   console.log(
-    `[CostFetcher] Starting background worker (poll interval: ${POLL_INTERVAL_MS}ms)`
+    `[CostFetcher] Starting background worker (poll interval: ${POLL_INTERVAL_MS}ms, using ${API_KEY_SOURCE})`
   );
 
   setInterval(async () => {
