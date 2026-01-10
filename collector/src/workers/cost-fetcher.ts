@@ -9,20 +9,28 @@
  * after ~2 seconds when the data is indexed.
  */
 
+import { z } from "zod";
 import { sql } from "../db/client.js";
 
-interface OpenRouterGenerationData {
-  id: string;
-  model: string;
-  total_cost: number;
-  native_tokens_prompt: number;
-  native_tokens_completion: number;
-  native_tokens_reasoning: number;
-  native_tokens_cached: number;
-  cache_discount: number | null;
-  latency: number;
-  created_at: string;
-}
+// Zod schema for OpenRouter API response validation
+const OpenRouterGenerationSchema = z.object({
+  id: z.string(),
+  model: z.string(),
+  total_cost: z.number(),
+  native_tokens_prompt: z.number().default(0),
+  native_tokens_completion: z.number().default(0),
+  native_tokens_reasoning: z.number().default(0),
+  native_tokens_cached: z.number().default(0),
+  cache_discount: z.number().nullable(),
+  latency: z.number(),
+  created_at: z.string(),
+});
+
+const OpenRouterResponseSchema = z.object({
+  data: OpenRouterGenerationSchema,
+});
+
+type OpenRouterGenerationData = z.infer<typeof OpenRouterGenerationSchema>;
 
 interface PendingEvent {
   id: number;
@@ -31,7 +39,8 @@ interface PendingEvent {
 }
 
 // Try OPENROUTER_API_KEY first, fall back to ANTHROPIC_AUTH_TOKEN (used by agent-framework clients)
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ?? process.env.ANTHROPIC_AUTH_TOKEN;
+const OPENROUTER_API_KEY =
+  process.env.OPENROUTER_API_KEY ?? process.env.ANTHROPIC_AUTH_TOKEN;
 const API_KEY_SOURCE = process.env.OPENROUTER_API_KEY
   ? "OPENROUTER_API_KEY"
   : process.env.ANTHROPIC_AUTH_TOKEN
@@ -42,6 +51,13 @@ const POLL_INTERVAL_MS = 10_000; // Check every 10 seconds
 const MAX_RETRIES = 3;
 const BATCH_SIZE = 50;
 const REQUEST_DELAY_MS = 100; // Delay between individual API calls to avoid rate limiting
+const FETCH_TIMEOUT_MS = 10_000; // 10 second timeout for API calls
+const MAX_CONSECUTIVE_ERRORS = 5;
+const MAX_BACKOFF_MS = 60_000; // Max 1 minute backoff
+
+// Error tracking for exponential backoff
+let consecutiveErrors = 0;
+let currentInterval = POLL_INTERVAL_MS;
 
 /**
  * Fetch generation data including cost from OpenRouter.
@@ -51,15 +67,21 @@ async function fetchOpenRouterCost(
 ): Promise<OpenRouterGenerationData | null> {
   if (!OPENROUTER_API_KEY) return null;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
   try {
     const response = await fetch(
-      `https://openrouter.ai/api/v1/generation?id=${generationId}`,
+      `https://openrouter.ai/api/v1/generation?id=${encodeURIComponent(generationId)}`,
       {
         headers: {
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         },
+        signal: controller.signal,
       }
     );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(
@@ -69,9 +91,24 @@ async function fetchOpenRouterCost(
     }
 
     const json = await response.json();
-    return json.data as OpenRouterGenerationData;
+    const parsed = OpenRouterResponseSchema.safeParse(json);
+
+    if (!parsed.success) {
+      console.error(
+        `[CostFetcher] Invalid response structure for ${generationId}:`,
+        parsed.error.message
+      );
+      return null;
+    }
+
+    return parsed.data.data;
   } catch (error) {
-    console.error(`[CostFetcher] Fetch error for ${generationId}:`, error);
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error(`[CostFetcher] Timeout fetching ${generationId}`);
+    } else {
+      console.error(`[CostFetcher] Fetch error for ${generationId}:`, error);
+    }
     return null;
   }
 }
@@ -205,6 +242,7 @@ export async function processPendingCosts(): Promise<number> {
 /**
  * Start the background cost fetcher worker.
  * Runs on an interval, checking for events that need cost data.
+ * Implements exponential backoff on consecutive errors.
  */
 export function startCostFetcherWorker(): void {
   if (!OPENROUTER_API_KEY) {
@@ -218,14 +256,33 @@ export function startCostFetcherWorker(): void {
     `[CostFetcher] Starting background worker (poll interval: ${POLL_INTERVAL_MS}ms, using ${API_KEY_SOURCE})`
   );
 
-  setInterval(async () => {
+  const runWorker = async () => {
     try {
       const processed = await processPendingCosts();
       if (processed > 0) {
         console.log(`[CostFetcher] Updated ${processed} events with cost data`);
       }
+      // Reset on success
+      consecutiveErrors = 0;
+      currentInterval = POLL_INTERVAL_MS;
     } catch (error) {
-      console.error("[CostFetcher] Worker error:", error);
+      consecutiveErrors++;
+      console.error(
+        `[CostFetcher] Worker error (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}):`,
+        error
+      );
+
+      if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        currentInterval = Math.min(currentInterval * 2, MAX_BACKOFF_MS);
+        console.warn(
+          `[CostFetcher] Too many consecutive errors, backing off to ${currentInterval}ms`
+        );
+      }
     }
-  }, POLL_INTERVAL_MS);
+
+    setTimeout(runWorker, currentInterval);
+  };
+
+  // Initial delay before first run
+  setTimeout(runWorker, POLL_INTERVAL_MS);
 }

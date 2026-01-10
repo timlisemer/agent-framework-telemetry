@@ -68,19 +68,23 @@ export async function upsertTranscript(
   `;
 }
 
-export async function validateApiKey(
+export async function getApiKeyByHash(
   keyHash: string
-): Promise<{ id: number } | null> {
+): Promise<{ id: number; key_hash: string } | null> {
   const result = await sql`
-    SELECT id FROM api_keys
+    SELECT id, key_hash FROM api_keys
     WHERE key_hash = ${keyHash} AND is_active = TRUE
   `;
 
   if (result.length === 0) return null;
 
-  sql`UPDATE api_keys SET last_used_at = NOW() WHERE key_hash = ${keyHash}`.catch(
-    () => {}
-  );
+  return { id: result[0].id as number, key_hash: result[0].key_hash as string };
+}
 
-  return { id: result[0].id };
+export function updateApiKeyLastUsed(keyHash: string): void {
+  sql`UPDATE api_keys SET last_used_at = NOW() WHERE key_hash = ${keyHash}`.catch(
+    (error) => {
+      console.error("[DB] Failed to update api_key last_used_at:", error);
+    }
+  );
 }

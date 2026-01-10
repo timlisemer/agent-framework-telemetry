@@ -1,5 +1,6 @@
 import { createMiddleware } from "hono/factory";
-import { validateApiKey } from "../db/queries.js";
+import { timingSafeEqual } from "crypto";
+import { getApiKeyByHash, updateApiKeyLastUsed } from "../db/queries.js";
 
 async function hashApiKey(key: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -9,9 +10,16 @@ async function hashApiKey(key: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export const authMiddleware = createMiddleware<{
-  Variables: { apiKeyId: number };
-}>(async (c, next) => {
+function timingSafeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    // Still perform a comparison to avoid timing leak on length check
+    timingSafeEqual(Buffer.from(a), Buffer.from(a));
+    return false;
+  }
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
+export const authMiddleware = createMiddleware(async (c, next) => {
   const apiKey = c.req.header("X-API-Key");
 
   if (!apiKey) {
@@ -19,12 +27,14 @@ export const authMiddleware = createMiddleware<{
   }
 
   const keyHash = await hashApiKey(apiKey);
-  const result = await validateApiKey(keyHash);
+  const result = await getApiKeyByHash(keyHash);
 
-  if (!result) {
+  if (!result || !timingSafeCompare(result.key_hash, keyHash)) {
     return c.json({ error: "Invalid API key" }, 403);
   }
 
-  c.set("apiKeyId", result.id);
+  // Update last_used_at in background (non-blocking)
+  updateApiKeyLastUsed(keyHash);
+
   await next();
 });

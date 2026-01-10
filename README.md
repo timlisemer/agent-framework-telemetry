@@ -408,7 +408,12 @@ Requires a local PostgreSQL instance with `DATABASE_URL` environment variable se
 
 ## Testing
 
-This project does not have automated tests.
+```bash
+cd collector
+bun test
+```
+
+Tests cover input validation, OpenRouter response parsing, and timing-safe comparison.
 
 ---
 
@@ -418,10 +423,13 @@ This project does not have automated tests.
 |------------|-------|
 | Max events per batch | 100 |
 | Min events per batch | 1 |
-| Max `hostId` length | 64 characters |
+| Max `hostId` length | 255 characters |
 | Max `sessionId` length | 255 characters |
-| Max `agentName` length | 64 characters |
-| Max `hookName` length | 64 characters |
-| Max `toolName` length | 64 characters |
-| Max `workingDir` length | 512 characters |
-| Max `modelName` length | 128 characters |
+| Max `agentName` length | 100 characters |
+| Max `hookName` length | 100 characters |
+| Max `toolName` length | 100 characters |
+| Max `workingDir` length | 1000 characters |
+| Max `modelName` length | 100 characters |
+| Max `decisionReason` length | 5000 characters |
+| Max `latencyMs` | 3600000 (1 hour) |
+| Max `errorCount` | 1000 |
