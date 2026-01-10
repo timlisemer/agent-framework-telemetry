@@ -73,4 +73,10 @@ ENV GF_PATHS_DATA=/var/lib/grafana
 EXPOSE 3000 3001 5432
 VOLUME ["/var/lib/postgresql/data", "/var/lib/grafana"]
 
+# Health check verifies all critical services are running
+# - PostgreSQL responds to queries
+# - Collector API responds on /api/v1/health
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD su postgres -c "pg_isready -q" && curl -sf http://localhost:3001/api/v1/health > /dev/null
+
 ENTRYPOINT ["/init"]
